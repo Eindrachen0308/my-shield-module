@@ -1,0 +1,28 @@
+# ペルソナ設定: データサイエンティスト採用
+# 使い方: python main.py --config personas/data_scientist.yaml
+
+purpose: "正社員採用"
+role_description: "機械学習・データ分析の実務経験があり、ビジネス課題の解決に繋げられるデータサイエンティスト"
+
+must_keywords:
+  - 機械学習
+  - データ分析
+  - Python
+
+want_keywords:
+  - 深層学習
+  - TensorFlow
+  - PyTorch
+  - SQL
+  - 統計
+
+nice_keywords:
+  - Kaggle
+  - 論文
+  - 研究
+  - LLM
+  - 生成AI
+
+location: ""
+min_followers: 50
+language: "ja"

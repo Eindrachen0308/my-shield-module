@@ -1,0 +1,27 @@
+# ペルソナ設定: バックエンドエンジニア採用
+# 使い方: python main.py --config personas/backend_engineer.yaml
+
+purpose: "正社員採用"
+role_description: "Pythonを中心としたバックエンド開発経験があり、クラウドインフラにも理解のあるエンジニア"
+
+must_keywords:
+  - Python
+  - バックエンド
+  - API
+
+want_keywords:
+  - AWS
+  - Docker
+  - Kubernetes
+  - Django
+  - FastAPI
+
+nice_keywords:
+  - OSS貢献
+  - 登壇経験
+  - 技術ブログ
+  - チームリード
+
+location: "東京"
+min_followers: 100
+language: "ja"

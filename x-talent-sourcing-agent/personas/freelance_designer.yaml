@@ -1,0 +1,24 @@
+# ペルソナ設定: フリーランスデザイナー
+# 使い方: python main.py --config personas/freelance_designer.yaml
+
+purpose: "業務委託・フリーランス"
+role_description: "UI/UXデザインの実務経験があり、プロダクト開発チームと協業できるデザイナー"
+
+must_keywords:
+  - UIデザイン
+  - UXデザイン
+  - Figma
+
+want_keywords:
+  - プロダクトデザイン
+  - デザインシステム
+  - ユーザーリサーチ
+
+nice_keywords:
+  - フリーランス
+  - 副業
+  - ポートフォリオ
+
+location: ""
+min_followers: 0
+language: "ja"

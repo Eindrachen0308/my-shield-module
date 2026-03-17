@@ -3,8 +3,27 @@
 
 X (Twitter) のツイートやプロフィール情報を検索し、
 指定のペルソナに合致する人材をA/B/Cランクでソーシングするエージェント。
+
+Usage:
+  # 対話モード（デフォルト）
+  python main.py
+
+  # YAML 設定ファイルから実行
+  python main.py --config personas/backend_engineer.yaml
+
+  # CLI 引数で直接指定
+  python main.py --purpose "正社員採用" --role "バックエンドエンジニア" \\
+    --must "Python,Django" --want "AWS,Docker" --nice "OSS貢献"
+
+  # 結果を自動エクスポート
+  python main.py --config persona.yaml --output csv
+  python main.py --config persona.yaml --output json
+
+  # 現在のペルソナ設定をYAMLに保存（対話モード後）
+  python main.py --save-config my_persona.yaml
 """
 
+import argparse
 import os
 import sys
 import csv
@@ -15,9 +34,13 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.markdown import Markdown
 
-from persona import PersonaCriteria, collect_persona_interactive
+from persona import (
+    PersonaCriteria,
+    collect_persona_interactive,
+    load_persona_from_yaml,
+    load_persona_from_args,
+)
 from x_client import XClient
 from scorer import rank_candidates, Rank, ScoredCandidate
 
@@ -29,8 +52,122 @@ BANNER = """
 ║                                                          ║
 ║   Xのツイート・プロフィールから人材を発見し、            ║
 ║   A/B/Cランクで評価・レコメンドします                    ║
+║                                                          ║
+║   モード: --config <yaml> | --purpose/--role/--must | 対話║
 ╚══════════════════════════════════════════════════════════╝
 """
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
+    parser = argparse.ArgumentParser(
+        description="X (Twitter) 人材ソーシングエージェント",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""\
+使用例:
+  # 対話モード
+  python main.py
+
+  # YAML設定ファイルから
+  python main.py --config personas/backend_engineer.yaml
+
+  # CLI引数で直接指定
+  python main.py --purpose "正社員採用" --role "バックエンドエンジニア" \\
+    --must "Python,Django" --want "AWS,Docker"
+        """,
+    )
+
+    # --- 設定ファイルモード ---
+    parser.add_argument(
+        "-c", "--config",
+        type=str,
+        metavar="YAML_FILE",
+        help="ペルソナ設定YAMLファイルのパス",
+    )
+
+    # --- CLI引数モード ---
+    cli_group = parser.add_argument_group("CLI引数モード（--config 未使用時）")
+    cli_group.add_argument(
+        "--purpose",
+        type=str,
+        help="ソーシングの目的（例: 正社員採用, 業務委託）",
+    )
+    cli_group.add_argument(
+        "--role",
+        type=str,
+        help="求める人物像（例: Pythonが得意なバックエンドエンジニア）",
+    )
+    cli_group.add_argument(
+        "--must",
+        type=str,
+        help="必須キーワード（カンマ区切り。例: Python,Django,REST API）",
+    )
+    cli_group.add_argument(
+        "--want",
+        type=str,
+        help="推奨キーワード（カンマ区切り。例: AWS,Docker）",
+    )
+    cli_group.add_argument(
+        "--nice",
+        type=str,
+        help="加点キーワード（カンマ区切り。例: OSS貢献,登壇経験）",
+    )
+    cli_group.add_argument(
+        "--location",
+        type=str,
+        default="",
+        help="希望勤務地（例: 東京）",
+    )
+    cli_group.add_argument(
+        "--min-followers",
+        type=int,
+        default=0,
+        help="最小フォロワー数（デフォルト: 0）",
+    )
+
+    # --- 出力オプション ---
+    output_group = parser.add_argument_group("出力オプション")
+    output_group.add_argument(
+        "-o", "--output",
+        type=str,
+        choices=["csv", "json"],
+        help="結果を自動エクスポート（csv または json）",
+    )
+    output_group.add_argument(
+        "--output-file",
+        type=str,
+        metavar="PATH",
+        help="出力ファイル名（省略時は自動生成）",
+    )
+    output_group.add_argument(
+        "--save-config",
+        type=str,
+        metavar="YAML_FILE",
+        help="設定したペルソナをYAMLファイルに保存",
+    )
+
+    return parser
+
+
+def resolve_persona(args: argparse.Namespace) -> PersonaCriteria:
+    """Resolve persona from args priority: --config > CLI args > interactive."""
+    # Priority 1: YAML config file
+    if args.config:
+        console.print(f"[cyan]設定ファイルから読み込み: {args.config}[/cyan]")
+        persona = load_persona_from_yaml(args.config)
+        console.print(persona.to_prompt_context())
+        return persona
+
+    # Priority 2: CLI arguments
+    persona = load_persona_from_args(args)
+    if persona:
+        console.print("[cyan]CLI引数からペルソナを構築[/cyan]")
+        console.print(persona.to_prompt_context())
+        return persona
+
+    # Priority 3: Interactive mode
+    console.print("[cyan]対話モードでペルソナを設定します[/cyan]\n")
+    return collect_persona_interactive()
 
 
 def display_results(candidates: list[ScoredCandidate], persona: PersonaCriteria):
@@ -259,6 +396,9 @@ def run_sourcing(persona: PersonaCriteria, x_client: XClient, anthropic_key: str
 def main():
     load_dotenv()
 
+    parser = build_arg_parser()
+    args = parser.parse_args()
+
     console.print(BANNER)
 
     # Check API keys
@@ -281,27 +421,66 @@ def main():
 
     x_client = XClient(bearer_token)
 
-    while True:
-        # Collect persona
-        persona = collect_persona_interactive()
+    # Determine if running in non-interactive (batch) mode
+    is_batch = bool(args.config or args.purpose)
 
-        # Confirm before search
-        console.print("\n[bold]この設定で検索を開始しますか？[/bold]")
-        confirm = input("開始する場合は Enter、修正する場合は 'n': ").strip()
-        if confirm.lower() == "n":
-            continue
+    if is_batch:
+        # --- バッチモード: config/CLI引数 → 検索 → (自動エクスポート) → 終了 ---
+        persona = resolve_persona(args)
 
-        # Run sourcing
+        # Optionally save the resolved persona to YAML
+        if args.save_config:
+            persona.save_yaml(args.save_config)
+            console.print(f"[green]ペルソナ設定を保存しました: {args.save_config}[/green]")
+
         candidates = run_sourcing(persona, x_client, anthropic_key)
 
         if candidates:
-            should_restart = post_search_menu(candidates, persona)
-            if not should_restart:
-                break
-        else:
-            retry = input("\n条件を変えて再検索しますか？ (y/n): ").strip()
-            if retry.lower() != "y":
-                break
+            _handle_auto_export(args, candidates)
+    else:
+        # --- 対話モード: 従来通りのインタラクティブループ ---
+        while True:
+            persona = resolve_persona(args)
+
+            # Optionally save
+            if args.save_config:
+                persona.save_yaml(args.save_config)
+                console.print(
+                    f"[green]ペルソナ設定を保存しました: {args.save_config}[/green]"
+                )
+
+            # Confirm before search
+            console.print("\n[bold]この設定で検索を開始しますか？[/bold]")
+            confirm = input("開始する場合は Enter、修正する場合は 'n': ").strip()
+            if confirm.lower() == "n":
+                continue
+
+            candidates = run_sourcing(persona, x_client, anthropic_key)
+
+            if candidates:
+                _handle_auto_export(args, candidates)
+                should_restart = post_search_menu(candidates, persona)
+                if not should_restart:
+                    break
+            else:
+                retry = input("\n条件を変えて再検索しますか？ (y/n): ").strip()
+                if retry.lower() != "y":
+                    break
+
+
+def _handle_auto_export(args: argparse.Namespace, candidates: list[ScoredCandidate]):
+    """Handle --output flag for automatic export."""
+    if not args.output:
+        return
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if args.output == "csv":
+        filename = args.output_file or f"sourcing_results_{ts}.csv"
+        export_to_csv(candidates, filename)
+    elif args.output == "json":
+        filename = args.output_file or f"sourcing_results_{ts}.json"
+        export_to_json(candidates, filename)
 
 
 if __name__ == "__main__":
