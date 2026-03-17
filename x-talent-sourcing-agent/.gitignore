@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+sourcing_results_*.csv
+sourcing_results_*.json
+.venv/
+venv/
