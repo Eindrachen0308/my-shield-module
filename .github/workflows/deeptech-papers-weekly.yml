@@ -1,0 +1,49 @@
+name: DeepTech Weekly Conference Papers
+
+on:
+  schedule:
+    # 毎週月曜 09:00 JST = 毎週月曜 00:00 UTC
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        working-directory: deeptech-tracker
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch papers
+        working-directory: deeptech-tracker
+        run: python scripts/fetch_papers.py --days 7
+
+      - name: Generate weekly conference report
+        working-directory: deeptech-tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/generate_report.py --mode conference
+
+      - name: Commit & push
+        run: |
+          git config user.name "deeptech-tracker-bot"
+          git config user.email "deeptech-tracker-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain deeptech-tracker/reports/conferences)" ]; then
+            git add deeptech-tracker/reports/conferences
+            git commit -m "chore(deeptech): weekly conference papers $(date -u +%Y-%m-%d)"
+            git push
+          else
+            echo "No new weekly report to commit."
+          fi

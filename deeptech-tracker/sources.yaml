@@ -1,0 +1,129 @@
+# DeepTech News Tracker - ソース設定
+#
+# カテゴリごとに RSS フィード / X アカウント / arXiv カテゴリを定義する。
+# priority が低いカテゴリほど上位（先）に並ぶ。
+
+categories:
+  physical_ai_humanoid:
+    label: "Physical AI / ヒューマノイド"
+    priority: 1
+    rss:
+      - https://www.therobotreport.com/feed/
+      - https://spectrum.ieee.org/feeds/topic/robotics.rss
+      - https://blogs.nvidia.com/feed/
+      - https://www.figure.ai/rss.xml
+    x_accounts:
+      - Figure_robot
+      - Tesla_Optimus
+      - UnitreeRobotics
+      - 1x_tech
+      - DrJimFan
+      - chris_j_paxton
+      - physicalintelligence
+
+  physical_ai_autonomous:
+    label: "Physical AI / 自動運転"
+    priority: 2
+    rss:
+      - https://waymo.com/blog/rss.xml
+      - https://wayve.ai/feed/
+      - https://www.mobileye.com/blog/feed/
+    x_accounts:
+      - Waymo
+      - wayve_ai
+      - Mobileye
+      - Tesla_AI
+      - Kyle_L_Vogt
+
+  ai_foundation_models:
+    label: "AI / 基盤モデル"
+    priority: 3
+    rss:
+      - https://openai.com/blog/rss.xml
+      - https://www.anthropic.com/news/rss.xml
+      - https://deepmind.google/blog/rss.xml
+      - https://ai.meta.com/blog/rss/
+    x_accounts:
+      - OpenAI
+      - AnthropicAI
+      - GoogleDeepMind
+      - AIatMeta
+
+  quantum_computing:
+    label: "量子コンピューティング"
+    priority: 4
+    rss:
+      - https://thequantuminsider.com/feed/
+      - https://quantumcomputingreport.com/news/feed/
+    x_accounts:
+      - IBMQuantum
+      - GoogleQuantumAI
+      - IonQ_Inc
+
+  fusion_energy:
+    label: "核融合 / 次世代エネルギー"
+    priority: 5
+    rss:
+      - https://www.iter.org/feed/news
+      - https://cfs.energy/news/rss.xml
+    x_accounts:
+      - cfs_energy
+      - HelionEnergy
+      - TAETechnologies
+
+  biotech:
+    label: "バイオテック / 創薬AI"
+    priority: 6
+    rss:
+      - https://www.nature.com/nbt.rss
+      - https://www.science.org/rss/news_current.xml
+    x_accounts:
+      - DeepMindAI
+      - isomorphiclabs
+
+  semiconductor_space:
+    label: "半導体 / 宇宙"
+    priority: 7
+    rss:
+      - https://www.anandtech.com/rss/
+      - https://spacenews.com/feed/
+    x_accounts:
+      - SpaceX
+      - NASA_Artemis
+
+# 学会 / arXiv ソース (fetch_papers.py で使用)
+conferences:
+  - name: ICLR
+    year: 2026
+    openreview_venue: ICLR.cc/2026/Conference
+    arxiv_keywords:
+      - "ICLR 2026"
+  - name: CVPR
+    year: 2026
+    arxiv_keywords:
+      - "CVPR 2026"
+      - "accepted CVPR 2026"
+  - name: NeurIPS
+    year: 2025
+    arxiv_keywords:
+      - "NeurIPS 2025"
+  - name: ICML
+    year: 2025
+    arxiv_keywords:
+      - "ICML 2025"
+  - name: ICRA
+    year: 2026
+    arxiv_keywords:
+      - "ICRA 2026"
+  - name: CoRL
+    year: 2025
+    arxiv_keywords:
+      - "CoRL 2025"
+
+arxiv_categories:
+  # Physical AI 関連
+  - cs.RO     # Robotics
+  - cs.CV     # Computer Vision
+  - cs.LG     # Machine Learning
+  - cs.AI     # Artificial Intelligence
+  - cs.CL     # Computation and Language

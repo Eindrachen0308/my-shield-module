@@ -1,0 +1,6 @@
+feedparser>=6.0.11
+requests>=2.32.0
+PyYAML>=6.0.1
+arxiv>=2.1.0
+anthropic>=0.40.0
+python-dateutil>=2.9.0
